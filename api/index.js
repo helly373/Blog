@@ -1,27 +1,17 @@
 require('dotenv').config(); // Load environment variables from .env
 const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
+const { s3 } = require("./config/config");
+const cors = require("cors");
 const registerRoutes = require('./routes/UserRoutes'); 
+const postRoutes = require('./routes/PostRoutes')
+
 
 const app = express();
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
-
-// Enable CORS to allow frontend communication
-app.use(cors());
-
-// Enable JSON parsing for incoming requests
+app.use(cors()); 
 app.use(express.json());
 
-// Use routes (All routes in UserRoutes will be prefixed with "/user")
-app.use('/user', registerRoutes);
+app.use('/api', registerRoutes);
+app.use("/api", postRoutes);
 
 // Start the server
 const PORT = 4000;

@@ -5,8 +5,8 @@ img{
   max-width:100%;
 }
 main{
-  padding: 10px;
-  max-width: 700px;
+  /* padding: 10px; */
+  max-width: 100%;
   margin: 0 auto ;
 }
 header{
@@ -32,7 +32,7 @@ header nav{
 div.post{
     display: grid;
     grid-template-columns: 0.9fr 1.2fr;
-    gap: 20px;
+    gap: 50px;
     margin-bottom: 30px;
 }
 
@@ -42,7 +42,7 @@ div.post div.texts h2{
 }
 
 div.post p.info{
-  margin: 6px 0;
+  margin: 10px 0;
   color: #888;
   font-size: .7rem;
   font-weight: bold;
