@@ -1,5 +1,5 @@
 import '../css/Registerpage.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from "react";
 import axios from "axios";
 
@@ -8,13 +8,14 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const navigate = useNavigate(); // Hook for navigation
 
   // Function to handle registration
   const handleRegister = async (e) => {
     e.preventDefault(); // Prevent default form submission
 
     try {
-      const response = await axios.post('http://localhost:4000/user/register', {
+      const response = await axios.post('http://localhost:4000/api/register', {
         username,
         email,
         password,
@@ -23,6 +24,8 @@ export default function RegisterPage() {
 
       console.log(response.data);
       alert("Registration Successful!");
+      // Redirect to login page after successful registration
+      navigate('/login');
     } catch (error) {
       console.error("Error registering:", error);
       alert("Registration failed. Please try again.");

@@ -12,7 +12,7 @@ export default function LoginPage() {
     e.preventDefault(); // Prevent default form submission
 
     try {
-      const response = await axios.post('http://localhost:4000/user/login', {
+      const response = await axios.post('http://localhost:4000/api/login', {
         email, // Using email for login
         password,
       });

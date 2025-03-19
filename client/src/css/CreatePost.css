@@ -137,3 +137,48 @@
       width: 100%;
     }
   }
+
+  /* Location section styling */
+.location-section {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.location-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.2rem;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 8px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    flex-direction: row;
+  }
+}
+
+.half-width {
+  flex: 1;
+}
+
+.coordinates-hint {
+  display: block;
+  margin-top: 5px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+
+

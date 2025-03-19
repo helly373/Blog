@@ -1,5 +1,5 @@
 .blog-container {
-  max-width: 1200px;
+  max-width: 70%;
   margin: 30px auto;
   padding: 20px;
 }
@@ -29,6 +29,7 @@
 }
 
 .post-card-horizontal {
+  height: 240px;
   display: flex;
   background-color: white;
   border-radius: 12px;
@@ -36,6 +37,7 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 
 .post-card-horizontal:hover {
   transform: translateY(-5px);
@@ -65,22 +67,30 @@
   padding: 25px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 
+/* Title with fixed height */
 .post-title {
   font-size: 1.5rem;
   margin-bottom: 10px;
   color: #333;
   font-weight: 600;
+  height: 1.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .post-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   font-size: 0.9rem;
   color: #666;
 }
+
 
 .post-author {
   font-weight: 500;
@@ -94,19 +104,25 @@
   color: #555;
   line-height: 1.7;
   margin-bottom: 15px;
-  flex-grow: 1;
-  /* Allow more text to show in the horizontal layout */
+  height: 4.8em; /* Exactly 3 lines (1.6em per line * 3) */
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3; /* Show exactly 3 lines */
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
 }
 
 .post-categories {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: auto;
+  position: absolute;
+  bottom: 20px;
+  left: 25px;
+  right: 25px;
+  height: 26px;
+  overflow: hidden;
 }
 
 .category-tag {
@@ -117,6 +133,7 @@
   padding: 4px 10px;
   border-radius: 20px;
 }
+
 
 .loading {
   text-align: center;
@@ -164,9 +181,10 @@
   transform: translateY(-2px);
 }
 
-/* Responsive styles for smaller screens */
 @media (max-width: 768px) {
   .post-card-horizontal {
+    height: auto;
+    min-height: 400px;
     flex-direction: column;
   }
   
@@ -175,7 +193,163 @@
     height: 200px;
   }
   
-  .blog-title {
-    font-size: 2rem;
+  .post-content-horizontal {
+    padding: 15px;
   }
+
+  .read-more-link {
+    bottom: 45px;
+    right: 15px;
+  }
+
+  .post-categories {
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
+  }
+}
+
+/* Location styling */
+.post-location {
+  margin-bottom: 5px;
+  color: #666;
+  font-size: 0.9rem;
+  height: 1.3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-location i {
+  color: #3a80d2;
+  margin-right: 5px;
+}
+
+/* Read more link styling */
+.read-more-link {
+  color: #3a80d2;
+  margin-left: 5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  position: absolute;
+  bottom: 35px;
+  right: 25px;
+  background-color: white;
+  padding: 0 5px;
+  z-index: 2;
+}
+
+.read-more-link:hover {
+  text-decoration: underline;
+}
+
+.post-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.post-modal-content {
+  background-color: white;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-content {
+  line-height: 1.7;
+  white-space: normal;
+  overflow: visible;
+}
+
+
+.modal-title {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.modal-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+
+
+.modal-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.post-summary-horizontal {
+  color: #555;
+  line-height: 1.5;
+  max-height: 4.5em; /* 3 lines × 1.5 line-height */
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+/* Gradient fade for text truncation */
+.post-summary-horizontal::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 70%;
+  height: 1.5em;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1) 80%);
+}
+
+/* Add a bit more space if needed */
+.post-content-horizontal {
+  max-height: 450px;
+  overflow-y: auto;
+}
+
+/* Optional: Add a subtle scrollbar styling */
+.post-content-horizontal::-webkit-scrollbar {
+  width: 5px;
+}
+
+.post-content-horizontal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.post-content-horizontal::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 5px;
+}
+
+.post-content-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #ccc;
 }

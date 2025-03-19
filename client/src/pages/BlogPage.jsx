@@ -6,7 +6,7 @@ export default function BlogPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [debugInfo, setDebugInfo] = useState(null); // For storing debugging information
+  const [selectedPostId, setSelectedPostId] = useState(null);
 
   useEffect(() => {
     // Fetch posts from the backend API
@@ -16,9 +16,9 @@ export default function BlogPage() {
         
         // Get the token from localStorage (if user is logged in)
         const token = localStorage.getItem("token");
-        console.log("Token available:", !!token); // Debug: Check if token exists
+        console.log("Token available:", !!token);
         
-        // Make API request to fetch posts - use relative URL
+        // Make API request to fetch posts
         const response = await fetch('http://localhost:4000/api/posts', {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -38,43 +38,22 @@ export default function BlogPage() {
         if (!response.ok) {
           throw new Error(data.error || "Failed to fetch posts");
         }
-
-        console.log("Posts fetched successfully:", data);
-        
-        // Store first post for debugging
-        const firstPost = data[0];
-        if (firstPost) {
-          console.log("First post author:", firstPost.author);
-          console.log("First post author type:", typeof firstPost.author);
-          setDebugInfo({
-            firstPostId: firstPost._id,
-            firstPostAuthor: firstPost.author,
-            authorType: typeof firstPost.author
-          });
-        }
         
         // Fetch author usernames for posts
         const postsWithUsernames = await Promise.all(data.map(async (post, index) => {
           try {
-            // Log post author info
-            console.log(`Post ${index} - author:`, post.author);
-            
             // Get the author ID - handle both string ID and object with _id
             const authorId = typeof post.author === 'string' 
               ? post.author 
               : (post.author && post.author._id ? post.author._id : post.author);
             
-            console.log(`Post ${index} - resolved authorId:`, authorId);
-            
             if (!authorId) {
-              console.error(`No valid author ID found for post ${index}`);
               return { ...post, authorUsername: 'Missing Author ID' };
             }
             
             // Only proceed with fetch if we have an authorId
             if (authorId) {
               const userEndpoint = `http://localhost:4000/api/users/${authorId}`;
-              console.log(`Fetching user from: ${userEndpoint}`);
               
               // Fetch user data from backend
               const userResponse = await fetch(userEndpoint, {
@@ -83,28 +62,22 @@ export default function BlogPage() {
                 }
               });
               
-              console.log(`User API response status: ${userResponse.status}`);
-              
               if (userResponse.ok) {
                 const userData = await userResponse.json();
-                console.log(`User data for post ${index}:`, userData);
                 
                 // Check if username exists
                 if (userData && userData.username) {
-                  console.log(`Found username: ${userData.username}`);
                   return {
                     ...post,
                     authorUsername: userData.username
                   };
                 } else {
-                  console.error(`No username in userData for post ${index}:`, userData);
                   return {
                     ...post,
                     authorUsername: 'No Username Found'
                   };
                 }
               } else {
-                console.error(`Failed to fetch user for post ${index}. Status: ${userResponse.status}`);
                 return {
                   ...post,
                   authorUsername: `Fetch Error (${userResponse.status})`
@@ -112,7 +85,6 @@ export default function BlogPage() {
               }
             }
           } catch (err) {
-            console.error(`Error fetching username for post ${index}:`, err);
             return {
               ...post,
               authorUsername: `Error: ${err.message}`
@@ -126,7 +98,6 @@ export default function BlogPage() {
           };
         }));
         
-        console.log("Posts with usernames:", postsWithUsernames);
         setPosts(postsWithUsernames);
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -143,6 +114,53 @@ export default function BlogPage() {
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Generate location display string
+  const formatLocation = (post) => {
+    const location = post.location || {};
+    const city = location.city;
+    const country = location.country;
+    const region = location.region;
+    
+    let locationParts = [];
+    if (city) locationParts.push(city);
+    if (country) locationParts.push(country);
+    if (region) locationParts.push(region);
+    
+    return locationParts.length > 0 
+      ? locationParts.join(', ')
+      : 'Location not specified';
+  };
+
+  // Modal for viewing the full post
+  const renderFullPostModal = () => {
+    if (!selectedPostId) return null;
+    
+    const post = posts.find(p => (p._id || p.id) === selectedPostId);
+    if (!post) return null;
+    
+    return (
+      <div className="post-modal-overlay" onClick={() => setSelectedPostId(null)}>
+        <div className="post-modal-content" onClick={e => e.stopPropagation()}>
+          <button className="modal-close-button" onClick={() => setSelectedPostId(null)}>×</button>
+          <h2 className="modal-title">{post.title}</h2>
+          <div className="modal-metadata">
+            <span>By: {post.authorUsername || 'Anonymous'}</span>
+            <span>{post.date || post.createdAt ? formatDate(post.date || post.createdAt) : 'Unknown date'}</span>
+            <span><i className="fas fa-map-marker-alt"></i> {formatLocation(post)}</span>
+          </div>
+          <p className="modal-content">{post.summary || post.content}</p>
+          {post.categories && post.categories.length > 0 && (
+            <div className="modal-categories">
+              {post.categories.map((category, index) => (
+                <span key={index} className="category-tag">{category}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -171,14 +189,6 @@ export default function BlogPage() {
         Explore our adventures around the world, from bustling cities to tranquil beaches and everything in between.
       </p>
       
-      {/* Debug information - only visible during development */}
-      {/* {debugInfo && process.env.NODE_ENV === 'development' && (
-        <div style={{background: '#f0f0f0', padding: '10px', margin: '10px 0', borderRadius: '5px'}}>
-          <h3>Debug Info:</h3>
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
-      )} */}
-      
       {posts.length > 0 ? (
         <div className="blog-posts-single-column">
           {posts.map(post => (
@@ -205,7 +215,26 @@ export default function BlogPage() {
                       : 'Unknown date'}
                   </span>
                 </div>
-                <p className="post-summary-horizontal">{post.summary}</p>
+                
+                {/* Location information */}
+                <div className="post-location">
+                  <i className="fas fa-map-marker-alt"></i> {formatLocation(post)}
+                </div>
+                
+                {/* Summary with read more link */}
+                  <div className="post-summary-container">
+                    <p className="post-summary-horizontal">
+                      {(post.summary || post.content).substring(0, 150)}
+                      {/* Don't add ellipsis here, the CSS will handle truncation */}
+                    </p>
+                    <span 
+                      className="read-more-link"
+                      onClick={() => setSelectedPostId(post._id || post.id)}
+                    >
+                      Read more
+                    </span>
+                  </div>
+                
                 {post.categories && post.categories.length > 0 && (
                   <div className="post-categories">
                     {post.categories.map((category, index) => (
@@ -223,6 +252,9 @@ export default function BlogPage() {
           <Link to="/create-post" className="create-post-link">Create a Post</Link>
         </div>
       )}
+      
+      {/* Modal for full post view */}
+      {renderFullPostModal()}
     </div>
   );
 }

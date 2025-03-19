@@ -1,175 +1,211 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../css/CreatePost.css";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../css/CreatePost.css';
 
-export default function CreatePost() {
+const CreatePost = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: "",
-    summary: "",
-    categories: ""
-  });
-  const [image, setImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
+  const [file, setFile] = useState(null);
+  const [categories, setCategories] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  // Location state variables (removed latitude and longitude)
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [region, setRegion] = useState('');
+  
+  // Available regions/continents
+  const regions = [
+    'Europe', 
+    'Asia', 
+    'Africa', 
+    'North America', 
+    'South America', 
+    'Australia', 
+    'Antarctica',
+    'Uncategorized'
+  ];
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  // Handle image input
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
-        return;
-      }
-      
-      setImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!image) {
-      setError("Please select an image");
+    // Validate form inputs
+    if (!title || !summary || !file) {
+      setError('Please fill out all required fields (title, summary, and image)');
       return;
     }
     
-    setIsSubmitting(true);
-    setError("");
-
     try {
-      const token = localStorage.getItem("token");
+      setLoading(true);
+      
+      // Get token from local storage
+      const token = localStorage.getItem('token');
       if (!token) {
-        setError("You must be logged in to create a post");
-        setIsSubmitting(false);
+        setError('You must be logged in to create a post');
+        setLoading(false);
         return;
       }
-
-      // Create form data for sending to the backend
-      const postData = new FormData();
-      postData.append("title", formData.title);
-      postData.append("summary", formData.summary);
-      postData.append("categories", formData.categories);
-      postData.append("image", image);
-
-      // Send request to backend
-      const response = await fetch("http://localhost:4000/api/posts", {
-        method: "POST",
+      
+      // Create FormData object to send file
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('summary', summary);
+      formData.append('image', file);
+      
+      if (categories) {
+        formData.append('categories', categories);
+      }
+      
+      // Add location data if provided
+      if (country) formData.append('country', country);
+      if (city) formData.append('city', city);
+      if (region) formData.append('region', region);
+      
+      // Send request to create post
+      const response = await fetch('http://localhost:4000/api/posts', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         },
-        body: postData
+        body: formData
       });
-
-      const data = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create post");
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create post');
       }
-
-      // Redirect to the blog page after successful submission
-      navigate("/BlogPage");
-    } catch (error) {
-      console.error("Error creating post:", error);
-      setError(error.message || "Failed to create post. Please try again.");
+      
+      // Post created successfully, navigate to blog page
+      navigate('/BlogPage');
+    } catch (err) {
+      console.error('Error creating post:', err);
+      setError(err.message || 'An error occurred while creating your post');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="create-post-container">
-      <h1>Create a New Travel Post</h1>
+      <h1 className="create-post-title">Create a New Travel Post</h1>
       
       {error && <div className="error-message">{error}</div>}
       
-      <form onSubmit={handleSubmit} className="post-form">
+      <form className="create-post-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="title">Title</label>
+          <label htmlFor="title">Title *</label>
           <input
             type="text"
             id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter a compelling title"
             required
-            placeholder="Enter the title of your travel experience"
           />
         </div>
-
+        
+        <div className="form-group">
+          <label htmlFor="summary">Summary *</label>
+          <textarea
+            id="summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="Write a brief summary of your travel experience"
+            required
+            rows={4}
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="image">Image *</label>
+          <input
+            type="file"
+            id="image"
+            onChange={(e) => setFile(e.target.files[0])}
+            accept="image/*"
+            required
+          />
+          <small>Please upload an image that captures your travel experience</small>
+        </div>
+        
         <div className="form-group">
           <label htmlFor="categories">Categories</label>
           <input
             type="text"
             id="categories"
-            name="categories"
-            value={formData.categories}
-            onChange={handleChange}
-            placeholder="E.g. Beach, Mountains, City (comma separated)"
+            value={categories}
+            onChange={(e) => setCategories(e.target.value)}
+            placeholder="Enter categories separated by commas (e.g., Mountains, Hiking, Adventure)"
           />
-          <small>Separate categories with commas</small>
+          <small>Optional: Add categories to help organize your post</small>
         </div>
-
-        <div className="form-group">
-          <label htmlFor="image">Upload Cover Image</label>
-          <input
-            type="file"
-            id="image"
-            name="image"
-            onChange={handleImageChange}
-            accept="image/*"
-            required
-          />
-          <small>Maximum file size: 5MB</small>
-          {previewUrl && (
-            <div className="image-preview">
-              <img src={previewUrl} alt="Preview" />
+        
+        {/* Location Information Section */}
+        <div className="location-section">
+          <h3>Location Information</h3>
+          
+          <div className="form-row">
+            <div className="form-group half-width">
+              <label htmlFor="country">Country</label>
+              <input
+                type="text"
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="e.g., Spain, Japan, Brazil"
+              />
             </div>
-          )}
+            
+            <div className="form-group half-width">
+              <label htmlFor="city">City</label>
+              <input
+                type="text"
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g., Barcelona, Tokyo, Rio de Janeiro"
+              />
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="region">Region/Continent</label>
+            <select
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+            >
+              <option value="">Select a region</option>
+              {regions.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
         </div>
-
-        <div className="form-group">
-          <label htmlFor="summary">Content</label>
-          <textarea
-            id="summary"
-            name="summary"
-            value={formData.summary}
-            onChange={handleChange}
-            required
-            placeholder="Share your travel experience, tips, and recommendations..."
-            rows="10"
-          ></textarea>
-        </div>
-
+        
         <div className="form-actions">
+          <button 
+            type="submit" 
+            className="submit-button"
+            disabled={loading}
+          >
+            {loading ? 'Creating...' : 'Create Post'}
+          </button>
+          
           <button 
             type="button" 
             className="cancel-button"
-            onClick={() => navigate("/BlogPage")}
+            onClick={() => navigate('/BlogPage')}
+            disabled={loading}
           >
             Cancel
-          </button>
-          <button 
-            type="submit" 
-            className="submit-button" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Publishing..." : "Publish Post"}
           </button>
         </div>
       </form>
     </div>
   );
-}
+};
+
+export default CreatePost;

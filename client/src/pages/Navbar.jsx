@@ -68,6 +68,12 @@ export default function Navbar() {
             >
               Blog
             </Link>
+            <Link 
+              to="/explore" 
+              className={`nav-link ${location.pathname === '/explore' ? 'active' : ''}`}
+            >
+              Map
+            </Link>
           </div>
 
           <div className="auth-buttons">
