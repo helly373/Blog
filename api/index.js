@@ -10,8 +10,8 @@ const app = express();
 app.use(cors()); 
 app.use(express.json());
 
-app.use('/api', registerRoutes);
-app.use("/api", postRoutes);
+app.use('/api/users', registerRoutes);
+app.use("/api/post", postRoutes);
 
 // Start the server
 const PORT = 4000;

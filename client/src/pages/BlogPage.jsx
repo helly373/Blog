@@ -222,18 +222,18 @@ export default function BlogPage() {
                 </div>
                 
                 {/* Summary with read more link */}
-                  <div className="post-summary-container">
-                    <p className="post-summary-horizontal">
-                      {(post.summary || post.content).substring(0, 150)}
-                      {/* Don't add ellipsis here, the CSS will handle truncation */}
-                    </p>
-                    <span 
-                      className="read-more-link"
-                      onClick={() => setSelectedPostId(post._id || post.id)}
-                    >
-                      Read more
-                    </span>
-                  </div>
+<div className="post-summary-container">
+  <p className="post-summary-horizontal">
+    {(post.summary || post.content).substring(0, 150)}
+    {/* Don't add ellipsis here, the CSS will handle truncation */}
+  </p>
+  <span 
+    className="read-more-link"
+    onClick={() => setSelectedPostId(post._id || post.id)}
+  >
+    Read more
+  </span>
+</div>
                 
                 {post.categories && post.categories.length > 0 && (
                   <div className="post-categories">

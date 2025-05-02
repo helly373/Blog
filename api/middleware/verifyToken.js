@@ -1,24 +1,27 @@
-// middleware/verifyToken.js
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+// This is what your verifyToken middleware might look like
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
-function verifyToken(req, res, next) {
-  // Expecting the token in the "Authorization" header as "Bearer <token>"
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ error: "Access denied, token missing!" });
-  }
-
+const verifyToken = (req, res, next) => {
   try {
+    // Get token from header
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No authentication token, access denied' });
+    }
+    
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach the user ID (or any other data you encoded) to the request
-    req.userId = decoded.id;
+    
+    // Add user info to request
+    req.user = { id: decoded.id }; // Make sure this line is executing
+    
     next();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid token" });
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Token is not valid' });
   }
-}
+};
 
 module.exports = verifyToken;
