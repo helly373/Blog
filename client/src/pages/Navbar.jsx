@@ -98,20 +98,27 @@ export default function Navbar() {
             {isLoggedIn ? (
               <>
                 {/* Profile photo button */}
-                {user && (
-                  <Link 
-                    to={`/profile/${user.id}`} 
-                    className="profile-photo-btn"
-                    title="View Profile"
-                    onClick={closeMobileMenu}
-                  >
-                    <img 
-                      src={user.profilePhoto || "/default-avatar.jpg"} 
-                      alt="Profile" 
-                      className="profile-photo"
-                    />
-                  </Link>
-                )}
+                  {/* {user && (
+                    <Link 
+                      to={`/profile/${user.id}`} 
+                      className="profile-photo-btn"
+                      title="View Profile"
+                      onClick={() => {
+                        console.log('Profile photo URL:', user.profilePhoto);
+                        closeMobileMenu();
+                      }}
+                    >
+                      <img 
+                        src={user.profilePhoto || "/default-avatar.jpg"} 
+                        alt="Profile" 
+                        className="profile-photo"
+                        onError={(e) => {
+                          console.log('Image loading error, falling back to default');
+                          e.target.src = "/default-avatar.jpg";
+                        }}
+                      />
+                    </Link>
+                  )} */}
                 <Link 
                   to="/create-post" 
                   className="create-post-btn"
@@ -125,6 +132,13 @@ export default function Navbar() {
                 >
                   Logout
                 </button>
+                <Link to={`/profile/${user.id}`} className="profile-photo-btn" title="View Profile">
+          <img 
+            src={user.profilePhoto || "/default-avatar.jpg"} 
+            alt="Profile" 
+            className="profile-photo"
+          />
+        </Link>
               </>
             ) : (
               <>
