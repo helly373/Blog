@@ -1,34 +1,42 @@
 import '../css/Registerpage.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from "react";
-import axios from "axios";
+import ApiService from "../services/api"; // Import the ApiService instead of axios
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const navigate = useNavigate(); // Hook for navigation
+  const [error, setError] = useState(''); // Add error state for better error handling
+  const navigate = useNavigate();
 
   // Function to handle registration
   const handleRegister = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
+    setError(''); // Clear any previous errors
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/register`, {
+      // Use ApiService instead of direct axios call
+      const response = await ApiService.register({
         username,
         email,
         password,
         confirmPassword
       });
 
-      console.log(response.data);
-      alert("Registration Successful!");
-      // Redirect to login page after successful registration
-      navigate('/login');
+      console.log(response);
+      
+      if (response.message === "User registered successfully.") {
+        alert("Registration Successful!");
+        navigate('/login');
+      } else {
+        // If there's an error message in the response
+        setError(response.message || "Registration failed. Please try again.");
+      }
     } catch (error) {
       console.error("Error registering:", error);
-      alert("Registration failed. Please try again.");
+      setError("Registration failed. Please try again.");
     }
   };
 
@@ -42,6 +50,9 @@ export default function RegisterPage() {
         
         <div className="register-screen__content">
           <form className="register-form" onSubmit={handleRegister}>
+            {/* Display error message if there is one */}
+            {error && <div className="error-message">{error}</div>}
+            
             <div className="register-form__field">
               <i className="register-form__icon fas fa-user"></i>
               <input 
@@ -50,6 +61,7 @@ export default function RegisterPage() {
                 placeholder="Username"  
                 value={username} 
                 onChange={(e) => setUsername(e.target.value)}
+                required
               />
             </div>
             <div className="register-form__field">
@@ -60,6 +72,7 @@ export default function RegisterPage() {
                 placeholder="Email"  
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="register-form__field">
@@ -70,6 +83,7 @@ export default function RegisterPage() {
                 placeholder="Password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
             <div className="register-form__field">
@@ -80,6 +94,7 @@ export default function RegisterPage() {
                 placeholder="Confirm Password"
                 value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                required
               />
             </div>
             <button type="submit" className="button register-form__submit">

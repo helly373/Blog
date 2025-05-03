@@ -7,11 +7,17 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Check authentication status on component mount
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const userData = JSON.parse(localStorage.getItem("user"));
+    
     setIsLoggedIn(!!token);
+    if (userData) {
+      setUser(userData);
+    }
     
     // Add scroll event listener
     const handleScroll = () => {
@@ -32,11 +38,20 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
+    setUser(null);
   };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  // Close mobile menu when a link is clicked
+  const closeMobileMenu = () => {
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
   };
 
   return (
@@ -59,18 +74,21 @@ export default function Navbar() {
             <Link 
               to="/" 
               className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
+              onClick={closeMobileMenu}
             >
               Home
             </Link>
             <Link 
               to="/BlogPage" 
               className={`nav-link ${location.pathname === '/BlogPage' ? 'active' : ''}`}
+              onClick={closeMobileMenu}
             >
               Blog
             </Link>
             <Link 
               to="/explore" 
               className={`nav-link ${location.pathname === '/explore' ? 'active' : ''}`}
+              onClick={closeMobileMenu}
             >
               Map
             </Link>
@@ -79,19 +97,49 @@ export default function Navbar() {
           <div className="auth-buttons">
             {isLoggedIn ? (
               <>
-                <Link to="/create-post" className="create-post-btn">
+                {/* Profile photo button */}
+                {user && (
+                  <Link 
+                    to={`/profile/${user.id}`} 
+                    className="profile-photo-btn"
+                    title="View Profile"
+                    onClick={closeMobileMenu}
+                  >
+                    <img 
+                      src={user.profilePhoto || "/default-avatar.jpg"} 
+                      alt="Profile" 
+                      className="profile-photo"
+                    />
+                  </Link>
+                )}
+                <Link 
+                  to="/create-post" 
+                  className="create-post-btn"
+                  onClick={closeMobileMenu}
+                >
                   Create Post
                 </Link>
-                <button onClick={handleLogout} className="auth-btn logout-btn">
+                <button 
+                  onClick={handleLogout} 
+                  className="auth-btn logout-btn"
+                >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="auth-btn login-btn">
+                <Link 
+                  to="/login" 
+                  className="auth-btn login-btn"
+                  onClick={closeMobileMenu}
+                >
                   Login
                 </Link>
-                <Link to="/register" className="auth-btn signup-btn">
+                <Link 
+                  to="/register" 
+                  className="auth-btn signup-btn"
+                  onClick={closeMobileMenu}
+                >
                   SignUp
                 </Link>
               </>

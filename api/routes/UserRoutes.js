@@ -12,7 +12,7 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 
 // Route for getting a user by ID
-router.get('/users/:id', userController.getUserById);
+router.get('/:id', userController.getUserById);
 
 // Protected routes (auth required)
 router.put('/profile', auth, userController.updateProfile);

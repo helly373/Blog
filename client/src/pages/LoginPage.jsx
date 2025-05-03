@@ -1,46 +1,58 @@
 import '../css/loginpage.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from "react";
-import axios from "axios";
+import ApiService from "../services/api"; // Replace axios import with ApiService
 
 export default function LoginPage() {
-  const [email, setemail] = useState(''); // Using email for login
+  const [email, setEmail] = useState(''); // Changed setemail to setEmail for consistency
   const [password, setPassword] = useState('');
-  const navigate = useNavigate(); // Hook for redirection
+  const [error, setError] = useState(''); // Added for better error handling
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
+    setError(''); // Clear any previous errors
 
     try {
-      const response = await axios.post('http://localhost:4000/api/login', {
-        email, // Using email for login
-        password,
-      });
+      // Use ApiService instead of direct axios call
+      const response = await ApiService.login({ email, password });
 
-      // Assuming your backend returns an object with a "token" property
-      const { token } = response.data;
-      // Save the token (e.g., in localStorage for future requests)
-      localStorage.setItem("token", token);
-      alert("Login Successful!");
-
-      // Redirect the user to the home or dashboard page
-      navigate("/");
+      if (response.token) {
+        // Save the token
+        localStorage.setItem("token", response.token);
+        
+        // If the response includes user data, save it too
+        localStorage.setItem('user', JSON.stringify({
+          id: response.user.id,
+          username: response.user.username,
+          email: response.user.email,
+          profilePhoto: response.user.profilePhoto || null
+          // Add any other user data you need to access throughout the app
+        }));
+        
+        alert("Login Successful!");
+        navigate("/");
+      } else {
+        setError(response.error || "Login failed. Please check your credentials.");
+      }
     } catch (error) {
       console.error("Error logging in:", error);
-      alert("Login failed. Please check your credentials and try again.");
+      setError("Login failed. Please check your credentials and try again.");
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-screen">
-        {/* Back button positioned inside the form */}
         <Link to="/" className="back-link">
           <i className="fas fa-arrow-left"></i> Back to My Blog
         </Link>
 
         <div className="login-screen__content">
           <form className="login-form" onSubmit={handleLogin}>
+            {/* Display error message if there is one */}
+            {error && <div className="error-message">{error}</div>}
+            
             <div className="login-form__field">
               <i className="login-form__icon fas fa-user"></i>
               <input 
@@ -48,7 +60,8 @@ export default function LoginPage() {
                 className="login-form__input" 
                 placeholder="Email" 
                 value={email}
-                onChange={(e) => setemail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="login-form__field">
@@ -59,6 +72,7 @@ export default function LoginPage() {
                 placeholder="Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
             <button type="submit" className="button login-form__submit">
@@ -67,7 +81,6 @@ export default function LoginPage() {
             </button>
           </form>
           
-          {/* Add a link to sign up page at the bottom */}
           <div className="login-page-footer">
             <p>Don't have an account? <Link to="/register" className="auth-link">Sign Up</Link></p>
           </div>

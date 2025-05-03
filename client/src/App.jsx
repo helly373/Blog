@@ -1,12 +1,25 @@
 import './css/App.css';
-import {Route, Routes} from "react-router-dom";
+import {Route, Routes, Navigate} from "react-router-dom";
 import Layout from './Layout';
 import LoginPage from './pages/LoginPage';
 import IndexPage from './pages/Indexpage';
 import RegisterPage from './pages/Registerpage';
 import BlogPage from './pages/BlogPage';
-import CreatePost from './pages/CreatePost'; // Import the CreatePost component
+import CreatePost from './pages/CreatePost';
 import WorldMap from './pages/WorldMap';
+import Profile from './pages/ProfilePage'; // Import Profile component
+import EditProfile from './pages/EditProfilePage'; // Import EditProfile component
+
+// Protected route component
+const ProtectedRoute = ({ element }) => {
+  const isAuthenticated = !!localStorage.getItem('token');
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  return element;
+};
 
 function App() {
   return (
@@ -15,8 +28,10 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<IndexPage/>}/>
         <Route path="/BlogPage" element={<BlogPage/>}/>
-        <Route path="/create-post" element={<CreatePost/>}/> {/* Add CreatePost route */}
-        <Route path="/explore" element={<WorldMap/>}/> {/* Add WorldMap route */}
+        <Route path="/create-post" element={<CreatePost/>}/>
+        <Route path="/explore" element={<WorldMap/>}/>
+        <Route path="/profile/:userId" element={<Profile/>}/> {/* Add Profile route */}
+        <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfile/>}/>}/> {/* Add protected EditProfile route */}
         {/* Other routes that need the header... */}
       </Route>
       

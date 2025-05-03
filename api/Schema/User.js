@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   profilePhoto: {
     type: String,
-    default: 'default-profile.jpg'
+     default: ''
   },
   location: {
     type: String,
@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
   },
   coverPhoto: {
     type: String,
-    default: 'default-cover.jpg'
+     default: ''
   },
   // socialLinks: {
   //   facebook: { type: String, default: '' },

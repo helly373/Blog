@@ -114,7 +114,9 @@ exports.updateProfile = async (req, res) => {
       location,
       interests,
       visitedCountries,
-      bucketList
+      bucketList,
+      profilePhoto,    
+      coverPhoto     
     } = req.body;
     
     // Create an object with only the fields that were provided
@@ -125,6 +127,8 @@ exports.updateProfile = async (req, res) => {
     if (interests !== undefined) updateData.interests = interests;
     if (visitedCountries !== undefined) updateData.visitedCountries = visitedCountries;
     if (bucketList !== undefined) updateData.bucketList = bucketList;
+    if (profilePhoto !== undefined) updateData.profilePhoto = profilePhoto;  
+    if (coverPhoto !== undefined) updateData.coverPhoto = coverPhoto;    
     
     // Update the user profile
     const updatedUser = await User.findByIdAndUpdate(

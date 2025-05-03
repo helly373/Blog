@@ -1,374 +1,215 @@
-// ProfilePage.jsx
+// src/pages/Profile.js
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import ApiService from '../services/api';
 import '../css/Profile.css';
 
-const ProfilePage = () => {
-  const [user, setUser] = useState(null);
-  const [posts, setPosts] = useState([]);
+const Profile = () => {
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    displayName: '',
-    bio: '',
-    location: '',
-    profileImage: '',
-    coverImage: ''
-  });
-  const [previewProfileImage, setPreviewProfileImage] = useState(null);
-  const [previewCoverImage, setPreviewCoverImage] = useState(null);
-  const [activeTab, setActiveTab] = useState('posts');
-  
-  const { username } = useParams();
-  const navigate = useNavigate();
-  
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
-  
-  // Configure axios headers with token
-  const config = {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  };
-  
+  const { userId } = useParams();
+  const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+  const isOwnProfile = currentUser.id === userId;
+
+  // S3 bucket and region for constructing URLs if needed
+  const S3_BUCKET = 'travel-user-images';
+  const REGION = 'us-east-2';
+
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchProfile = async () => {
       try {
         setLoading(true);
-        // First, get user by username
-        const userResponse = await axios.get(`/api/users/username/${username}`);
-        setUser(userResponse.data);
-        
-        // Then get their posts
-        const postsResponse = await axios.get(`/api/posts/user/${userResponse.data._id}`);
-        setPosts(postsResponse.data);
-        
-        setFormData({
-          displayName: userResponse.data.displayName || '',
-          bio: userResponse.data.bio || '',
-          location: userResponse.data.location || '',
-          profileImage: userResponse.data.profileImage || '',
-          coverImage: userResponse.data.coverImage || ''
-        });
-        
-        setLoading(false);
+        const data = await ApiService.getUserProfile(userId);
+        if (data.user) {
+          setProfile(data.user);
+          console.log('Profile data loaded:', data.user);
+          console.log('Profile photo URL:', data.user.profilePhoto);
+          console.log('Cover photo URL:', data.user.coverPhoto);
+        } else {
+          setError(data.message || 'Failed to load profile');
+        }
       } catch (err) {
-        setError('Failed to load profile');
+        setError('Error fetching profile. Please try again later.');
+        console.error(err);
+      } finally {
         setLoading(false);
-        console.error('Error fetching profile data:', err);
       }
     };
-    
-    fetchUserData();
-  }, [username]);
-  
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-  
-  const handleImageChange = (e) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      const file = files[0];
-      const reader = new FileReader();
-      
-      reader.onloadend = () => {
-        if (name === 'profileImage') {
-          setPreviewProfileImage(reader.result);
-        } else if (name === 'coverImage') {
-          setPreviewCoverImage(reader.result);
-        }
-      };
-      
-      reader.readAsDataURL(file);
-      
-      // Store the file object in formData for later upload
-      setFormData({
-        ...formData,
-        [name]: file
-      });
-    }
-  };
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Create a FormData object to handle file uploads
-    const data = new FormData();
-    data.append('displayName', formData.displayName);
-    data.append('bio', formData.bio);
-    data.append('location', formData.location);
-    
-    // Append files only if they've been selected
-    if (formData.profileImage instanceof File) {
-      data.append('profileImage', formData.profileImage);
-    }
-    
-    if (formData.coverImage instanceof File) {
-      data.append('coverImage', formData.coverImage);
-    }
-    
+
+    fetchProfile();
+  }, [userId]);
+
+  const handleFollow = async () => {
     try {
-      const response = await axios.put(`/api/users/${user._id}/profile`, data, {
-        ...config,
-        headers: {
-          ...config.headers,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      setUser(response.data);
-      setIsEditing(false);
-      // Clear preview images
-      setPreviewProfileImage(null);
-      setPreviewCoverImage(null);
+      await ApiService.followUser(userId);
+      // Refresh profile to update follower count
+      const data = await ApiService.getUserProfile(userId);
+      if (data.user) {
+        setProfile(data.user);
+      }
     } catch (err) {
-      setError('Failed to update profile');
-      console.error('Error updating profile:', err);
+      console.error('Error following user:', err);
     }
   };
-  
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+
+  const handleUnfollow = async () => {
+    try {
+      await ApiService.unfollowUser(userId);
+      // Refresh profile to update follower count
+      const data = await ApiService.getUserProfile(userId);
+      if (data.user) {
+        setProfile(data.user);
+      }
+    } catch (err) {
+      console.error('Error unfollowing user:', err);
+    }
   };
+
+  // Function to get a valid image URL
+  const getValidImageUrl = (url, defaultUrl) => {
+    if (!url) return defaultUrl;
+    
+    // Check if this is an S3 path without full URL
+    if (url.includes('/') && !url.startsWith('http')) {
+      // If it's just a path from the bucket, construct the full URL
+      const path = url.startsWith('/') ? url.substring(1) : url;
+      console.log(`Converting path to full URL: ${path}`);
+      return `https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/${path}`;
+    }
+    
+    return url;
+  };
+
+  if (loading) return <div className="profile-loading">Loading profile...</div>;
+  if (error) return <div className="profile-error">{error}</div>;
+  if (!profile) return <div className="profile-not-found">Profile not found</div>;
+
+  // Default images if none are provided
+  const defaultProfilePic = '/default-profile.jpg';
+  const defaultCoverPic = '/default-cover.jpg';
+
+  // Get valid image URLs - use profilePhoto and coverPhoto field names
+  const profilePicUrl = getValidImageUrl(profile.profilePhoto, defaultProfilePic);
+  const coverPicUrl = getValidImageUrl(profile.coverPhoto, defaultCoverPic);
   
-  if (loading) return <div className="loading-container"><div className="loading"></div></div>;
-  if (error) return <div className="error-container">{error}</div>;
-  if (!user) return <div className="not-found-container">User not found</div>;
-  
-  const isOwnProfile = token && user._id === JSON.parse(atob(token.split('.')[1])).id;
-  
+  console.log('Displaying profile picture:', profilePicUrl);
+  console.log('Displaying cover picture:', coverPicUrl);
+
   return (
-    <div className="profile-page">
-      {/* Cover Image */}
-      <div 
-        className="cover-image" 
-        style={{ backgroundImage: `url(${previewCoverImage || user.coverImage || '/images/default-cover.jpg'})` }}
-      >
-        {isEditing && (
-          <div className="cover-upload">
-            <label htmlFor="coverImage" className="upload-btn">
-              Change Cover
-            </label>
-            <input 
-              type="file" 
-              id="coverImage"
-              name="coverImage"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="file-input"
+    <div className="profile-container">
+      <div className="profile-header">
+        <div 
+          className="profile-cover-photo" 
+          style={{ 
+            backgroundImage: `url(${coverPicUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          <div className="profile-photo-container">
+            <img 
+              src={profilePicUrl} 
+              alt={`${profile.username}'s profile`}
+              className="profile-photo"
+              onError={(e) => {
+                console.error('Image failed to load:', e.target.src);
+                e.target.src = defaultProfilePic;
+              }}
             />
           </div>
-        )}
-      </div>
-      
-      {/* Profile Header */}
-      <div className="profile-header">
-        <div className="profile-avatar-container">
-          <img 
-            src={previewProfileImage || user.profileImage || '/images/default-profile.jpg'} 
-            alt={user.username} 
-            className="profile-avatar"
-          />
-          {isEditing && (
-            <div className="avatar-upload">
-              <label htmlFor="profileImage" className="upload-btn">
-                <i className="fas fa-camera"></i>
-              </label>
-              <input 
-                type="file" 
-                id="profileImage"
-                name="profileImage"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="file-input"
-              />
-            </div>
-          )}
         </div>
         
-        <div className="profile-info">
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="edit-profile-form">
-              <div className="form-group">
-                <label htmlFor="displayName">Display Name</label>
-                <input
-                  type="text"
-                  id="displayName"
-                  name="displayName"
-                  value={formData.displayName}
-                  onChange={handleChange}
-                  placeholder="Your display name"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="bio">Bio</label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  placeholder="Tell us about yourself and your travels..."
-                  rows="3"
-                  maxLength="500"
-                ></textarea>
-                <small>{formData.bio.length}/500</small>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="location">Location</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="Your location"
-                />
-              </div>
-              
-              <div className="form-actions">
-                <button type="submit" className="save-btn">Save Changes</button>
-                <button type="button" onClick={() => setIsEditing(false)} className="cancel-btn">Cancel</button>
-              </div>
-            </form>
+        <div className="profile-info-header">
+          <h1 className="profile-username">{profile.username}</h1>
+          {isOwnProfile ? (
+            <Link to="/edit-profile" className="edit-profile-btn">
+              Edit Profile
+            </Link>
           ) : (
-            <>
-              <div className="profile-header-top">
-                <h1 className="display-name">{user.displayName || user.username}</h1>
-                {isOwnProfile && (
-                  <div className="profile-actions">
-                    <button onClick={() => setIsEditing(true)} className="edit-profile-btn">
-                      Edit Profile
-                    </button>
-                    <button onClick={handleLogout} className="logout-btn">
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="username">@{user.username}</div>
-              {user.bio && <div className="bio">{user.bio}</div>}
-              {user.location && (
-                <div className="location">
-                  <i className="fas fa-map-marker-alt"></i> {user.location}
-                </div>
-              )}
-              <div className="joined-date">
-                Joined {new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-              </div>
-            </>
+            <button 
+              className="follow-btn"
+              onClick={currentUser.following?.includes(profile.id) ? handleUnfollow : handleFollow}
+            >
+              {currentUser.following?.includes(profile.id) ? 'Unfollow' : 'Follow'}
+            </button>
           )}
         </div>
       </div>
-      
-      {/* Profile Tabs */}
-      <div className="profile-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('posts')}
-        >
-          Posts
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
-          onClick={() => setActiveTab('saved')}
-        >
-          Saved
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
-          onClick={() => setActiveTab('about')}
-        >
-          About
-        </button>
+
+      <div className="profile-stats">
+        <div className="stat">
+          <span className="stat-count">{profile.followersCount || 0}</span>
+          <span className="stat-label">Followers</span>
+        </div>
+        <div className="stat">
+          <span className="stat-count">{profile.followingCount || 0}</span>
+          <span className="stat-label">Following</span>
+        </div>
+        <div className="stat">
+          <span className="stat-count">{profile.posts?.length || 0}</span>
+          <span className="stat-label">Posts</span>
+        </div>
       </div>
-      
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'posts' && (
-          <div className="posts-grid">
-            {posts.length > 0 ? (
-              posts.map(post => (
-                <div key={post._id} className="post-card" onClick={() => navigate(`/post/${post._id}`)}>
-                  {post.images && post.images.length > 0 ? (
-                    <div className="post-image" style={{ backgroundImage: `url(${post.images[0].url})` }}></div>
-                  ) : (
-                    <div className="post-no-image">
-                      <h3>{post.title}</h3>
-                    </div>
-                  )}
-                  <div className="post-details">
-                    <h3 className="post-title">{post.title}</h3>
-                    {post.destination && (
-                      <div className="post-location">
-                        <i className="fas fa-map-marker-alt"></i> 
-                        {post.destination.city ? `${post.destination.city}, ` : ''}
-                        {post.destination.country}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
+
+      <div className="profile-content">
+        <div className="profile-section">
+          <h2 className="section-title">Bio</h2>
+          <p className="profile-bio">{profile.bio || 'No bio yet'}</p>
+        </div>
+
+        <div className="profile-section">
+          <h2 className="section-title">Location</h2>
+          <p className="profile-location">{profile.location || 'Not specified'}</p>
+        </div>
+
+        <div className="profile-section">
+          <h2 className="section-title">Interests</h2>
+          <div className="profile-interests">
+            {profile.interests && profile.interests.length > 0 ? (
+              <ul className="interests-list">
+                {profile.interests.map((interest, index) => (
+                  <li key={index} className="interest-tag">{interest}</li>
+                ))}
+              </ul>
             ) : (
-              <div className="no-posts">
-                <p>No posts yet!</p>
-                {isOwnProfile && (
-                  <button onClick={() => navigate('/create-post')} className="create-post-btn">
-                    Create your first post
-                  </button>
-                )}
-              </div>
+              <p>No interests added yet</p>
             )}
           </div>
-        )}
-        
-        {activeTab === 'saved' && (
-          <div className="saved-posts">
-            {user.savedPosts && user.savedPosts.length > 0 ? (
-              <div className="posts-grid">
-                {/* Show saved posts here similar to posts tab */}
-                <p>Saved posts will appear here</p>
-              </div>
+        </div>
+
+        <div className="profile-section">
+          <h2 className="section-title">Countries Visited</h2>
+          <div className="profile-countries">
+            {profile.visitedCountries && profile.visitedCountries.length > 0 ? (
+              <ul className="countries-list">
+                {profile.visitedCountries.map((country, index) => (
+                  <li key={index} className="country-tag">{country}</li>
+                ))}
+              </ul>
             ) : (
-              <div className="no-posts">
-                <p>No saved posts yet!</p>
-                <button onClick={() => navigate('/')} className="explore-btn">
-                  Explore posts
-                </button>
-              </div>
+              <p>No countries added yet</p>
             )}
           </div>
-        )}
-        
-        {activeTab === 'about' && (
-          <div className="about-section">
-            <h2>About {user.displayName || user.username}</h2>
-            <div className="about-content">
-              {user.bio ? (
-                <div className="about-bio">
-                  <h3>Bio</h3>
-                  <p>{user.bio}</p>
-                </div>
-              ) : (
-                <p>No bio information provided yet.</p>
-              )}
-              
-              {/* Add more sections here like travel stats, etc. */}
-            </div>
+        </div>
+
+        <div className="profile-section">
+          <h2 className="section-title">Bucket List</h2>
+          <div className="profile-bucket-list">
+            {profile.bucketList && profile.bucketList.length > 0 ? (
+              <ul className="bucket-list">
+                {profile.bucketList.map((item, index) => (
+                  <li key={index} className="bucket-list-item">{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No bucket list items added yet</p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default ProfilePage;
+export default Profile;
