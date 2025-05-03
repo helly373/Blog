@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../css/Blogpage.css";
+import ApiService from "../services/api"; // Import the ApiService
 
 export default function BlogPage() {
   const [posts, setPosts] = useState([]);
@@ -9,7 +10,7 @@ export default function BlogPage() {
   const [selectedPostId, setSelectedPostId] = useState(null);
 
   useEffect(() => {
-    // Fetch posts from the backend API
+    // Fetch posts from the backend API using ApiService
     const fetchPosts = async () => {
       try {
         setLoading(true);
@@ -18,29 +19,11 @@ export default function BlogPage() {
         const token = localStorage.getItem("token");
         console.log("Token available:", !!token);
         
-        // Make API request to fetch posts
-        const response = await fetch('http://localhost:4000/api/posts', {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          }
-        });
-
-        // Check if response is JSON
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Server returned non-JSON response:", text);
-          throw new Error("Unexpected response from server");
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch posts");
-        }
+        // Use ApiService to fetch posts
+        const postsData = await ApiService.getAllPosts();
         
         // Fetch author usernames for posts
-        const postsWithUsernames = await Promise.all(data.map(async (post, index) => {
+        const postsWithUsernames = await Promise.all(postsData.map(async (post) => {
           try {
             // Get the author ID - handle both string ID and object with _id
             const authorId = typeof post.author === 'string' 
@@ -53,23 +36,15 @@ export default function BlogPage() {
             
             // Only proceed with fetch if we have an authorId
             if (authorId) {
-              const userEndpoint = `http://localhost:4000/api/users/${authorId}`;
-              
-              // Fetch user data from backend
-              const userResponse = await fetch(userEndpoint, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {})
-                }
-              });
-              
-              if (userResponse.ok) {
-                const userData = await userResponse.json();
+              try {
+                // Use ApiService to get user profile
+                const userData = await ApiService.getUserProfile(authorId);
                 
-                // Check if username exists
-                if (userData && userData.username) {
+                // Check if username exists in the returned data structure
+                if (userData && userData.user && userData.user.username) {
                   return {
                     ...post,
-                    authorUsername: userData.username
+                    authorUsername: userData.user.username
                   };
                 } else {
                   return {
@@ -77,14 +52,16 @@ export default function BlogPage() {
                     authorUsername: 'No Username Found'
                   };
                 }
-              } else {
+              } catch (userError) {
+                console.error(`Error fetching user ${authorId}:`, userError);
                 return {
                   ...post,
-                  authorUsername: `Fetch Error (${userResponse.status})`
+                  authorUsername: `Fetch Error: ${userError.message}`
                 };
               }
             }
           } catch (err) {
+            console.error(`Error processing post author ${post._id}:`, err);
             return {
               ...post,
               authorUsername: `Error: ${err.message}`
@@ -222,18 +199,18 @@ export default function BlogPage() {
                 </div>
                 
                 {/* Summary with read more link */}
-<div className="post-summary-container">
-  <p className="post-summary-horizontal">
-    {(post.summary || post.content).substring(0, 150)}
-    {/* Don't add ellipsis here, the CSS will handle truncation */}
-  </p>
-  <span 
-    className="read-more-link"
-    onClick={() => setSelectedPostId(post._id || post.id)}
-  >
-    Read more
-  </span>
-</div>
+                <div className="post-summary-container">
+                  <p className="post-summary-horizontal">
+                    {(post.summary || post.content).substring(0, 150)}
+                    {/* Don't add ellipsis here, the CSS will handle truncation */}
+                  </p>
+                  <span 
+                    className="read-more-link"
+                    onClick={() => setSelectedPostId(post._id || post.id)}
+                  >
+                    Read more
+                  </span>
+                </div>
                 
                 {post.categories && post.categories.length > 0 && (
                   <div className="post-categories">

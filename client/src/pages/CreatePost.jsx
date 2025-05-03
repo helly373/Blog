@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/CreatePost.css';
+import ApiService from '../services/api'; // Import the ApiService
 
 const CreatePost = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const CreatePost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Location state variables (removed latitude and longitude)
+  // Location state variables
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [region, setRegion] = useState('');
@@ -48,33 +49,26 @@ const CreatePost = () => {
         return;
       }
       
-      // Create FormData object to send file
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('summary', summary);
-      formData.append('image', file);
+      // Prepare categories array if provided
+      const categoriesArray = categories ? categories.split(',').map(cat => cat.trim()) : [];
       
-      if (categories) {
-        formData.append('categories', categories);
-      }
+      // Use ApiService to create post
+      const postData = {
+        title,
+        summary,
+        image: file,
+        categories: categoriesArray,
+        country,
+        city,
+        region
+      };
       
-      // Add location data if provided
-      if (country) formData.append('country', country);
-      if (city) formData.append('city', city);
-      if (region) formData.append('region', region);
+      // Call the ApiService method instead of making a direct fetch
+      const response = await ApiService.createPost(postData);
       
-      // Send request to create post
-      const response = await fetch('http://localhost:4000/api/posts', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create post');
+      // Check if there was an error in the response
+      if (response.error) {
+        throw new Error(response.error);
       }
       
       // Post created successfully, navigate to blog page

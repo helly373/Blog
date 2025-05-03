@@ -119,6 +119,135 @@ class ApiService {
     }
   }
 
+
+   // Post endpoints - Adding the new methods based on PostController.js
+   static async createPost(postData) {
+    try {
+      // Create a FormData object to handle file upload
+      const formData = new FormData();
+      
+      // Add image file to FormData
+      if (postData.image) {
+        formData.append('image', postData.image);
+      }
+      
+      // Add text fields to FormData
+      formData.append('title', postData.title);
+      formData.append('summary', postData.summary);
+      
+      // Add categories if provided
+      if (postData.categories && postData.categories.length > 0) {
+        formData.append('categories', postData.categories.join(','));
+      }
+      
+      // Add location data if provided
+      if (postData.country) formData.append('country', postData.country);
+      if (postData.city) formData.append('city', postData.city);
+      if (postData.region) formData.append('region', postData.region);
+      
+      // Get token from local storage
+      const token = localStorage.getItem('token');
+      
+      // We need to use different headers for FormData (without Content-Type)
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+      
+      console.log('Sending request with Authorization header:', headers.Authorization);
+      
+      // Use the endpoint that worked in the original code
+      const response = await fetch('http://localhost:4000/api/post/create-posts', {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error('Failed to create post');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Create post error:', error);
+      throw error;
+    }
+  }
+  
+  static async getAllPosts(filters = {}) {
+    try {
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      if (filters.region) queryParams.append('region', filters.region);
+      if (filters.country) queryParams.append('country', filters.country);
+      if (filters.category) queryParams.append('category', filters.category);
+      
+      const queryString = queryParams.toString();
+      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get all posts error:', error);
+      throw error;
+    }
+  }
+  
+  static async getPostsByRegion(region) {
+    try {
+      const response = await fetch(`${BASE_URL}/post/region/${region}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Get posts by region error for ${region}:`, error);
+      throw error;
+    }
+  }
+  
+  static async getPostsByCountry(country) {
+    try {
+      const response = await fetch(`${BASE_URL}/post/country/${country}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Get posts by country error for ${country}:`, error);
+      throw error;
+    }
+  }
+  
+  static async getMapData() {
+    try {
+      const response = await fetch(`${BASE_URL}/post/map-data`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get map data error:', error);
+      throw error;
+    }
+  }
+
   // Helper method to get auth headers (includes token)
   static getAuthHeaders() {
     const token = localStorage.getItem('token');

@@ -9,14 +9,14 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // POST /api/posts - Create a new post (protected route)
-router.post("/posts", verifyToken, upload.single("image"), postController.createPost);
+router.post("/create-posts", verifyToken, upload.single("image"), postController.createPost);
 
 // GET /api/posts - Fetch all posts (optionally filter by query params)
 router.get("/posts", postController.getAllPosts);
 
 // Map-related routes
 router.get("/map-data", postController.getMapData);
-router.get("/posts/region/:region", postController.getPostsByRegion);
-router.get("/posts/country/:country", postController.getPostsByCountry);
+router.get("/region/:region", postController.getPostsByRegion);
+router.get("/country/:country", postController.getPostsByCountry);
 
 module.exports = router;

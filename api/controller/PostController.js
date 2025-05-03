@@ -38,8 +38,8 @@ const createPost = async (req, res) => {
       imageUrl: uploadResult.Location,
       categories: categories ? categories.split(",") : [],
       location: Object.keys(location).length > 0 ? location : undefined,
-      author: req.userId,
-      user: req.userId
+      author: req.user.id,
+      user: req.user.id
     });
 
     const savedPost = await newPost.save();
