@@ -3,7 +3,7 @@
 // Get the base URL from environment variables
 const BASE_URL = process.env.NODE_ENV === 'production' 
   ? '' // Empty string for production (uses relative URLs)
-  : 'http://localhost:4000'; // Use your actual API development port
+  : 'http://localhost:4000/api'; // Use your actual API development port
 
 // Create a class for handling API requests
 class ApiService {
