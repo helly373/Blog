@@ -1,0 +1,13 @@
+{
+    "name": "travel-app",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+      "client",
+      "api"
+    ],
+    "scripts": {
+      "build": "yarn workspace client build",
+      "start": "yarn workspace api start"
+    }
+}
