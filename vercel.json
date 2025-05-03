@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "buildCommand": "cd client && yarn && yarn build",
+  "outputDirectory": "client/build",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/vercel.js" }
+  ]
+}

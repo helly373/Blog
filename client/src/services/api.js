@@ -1,7 +1,9 @@
 // src/services/api.js
 
 // Get the base URL from environment variables
-const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+const BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Empty string for production (uses relative URLs)
+  : 'http://localhost:4000'; // Use your actual API development port
 
 // Create a class for handling API requests
 class ApiService {
@@ -256,6 +258,28 @@ class ApiService {
       'Authorization': `Bearer ${token}`,
     };
   }
+
+  static async uploadFile(file, type){
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${BASE_URL}/upload/${type}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return { success: false, message: 'Error uploading file' };
+    }
+  }
+
+  
 }
 
 export default ApiService;

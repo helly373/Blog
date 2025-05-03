@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AWS from 'aws-sdk';
 import ApiService from '../services/api';
 import '../css/EditProfile.css';
-
-// AWS S3 Configuration
-const S3_BUCKET = process.env.REACT_APP_AWS_BUCKET_NAME || "travel-user-images";
-const REGION = process.env.REACT_APP_AWS_REGION || "us-east-2";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -19,20 +14,14 @@ const EditProfile = () => {
     coverPhoto: 0
   });
   
-  // Add AWS debug state to track configuration status
-  const [awsConfigStatus, setAwsConfigStatus] = useState({
-    hasAccessKey: false,
-    hasSecretKey: false
-  });
-  
   const [profileData, setProfileData] = useState({
     bio: '',
     location: '',
     interests: [],
     visitedCountries: [],
     bucketList: [],
-    profilePhoto: '', // Changed to match database schema
-    coverPhoto: ''    // Changed to match database schema
+    profilePhoto: '',
+    coverPhoto: ''
   });
   
   // Refs for file inputs
@@ -68,15 +57,15 @@ const EditProfile = () => {
             interests: data.user.interests || [],
             visitedCountries: data.user.visitedCountries || [],
             bucketList: data.user.bucketList || [],
-            profilePhoto: data.user.profilePhoto || '', // Changed to match database schema
-            coverPhoto: data.user.coverPhoto || ''      // Changed to match database schema
+            profilePhoto: data.user.profilePhoto || '',
+            coverPhoto: data.user.coverPhoto || ''
           });
           
           // Set image previews if available
-          if (data.user.profilePhoto) { // Changed to match database schema
+          if (data.user.profilePhoto) {
             setProfilePicturePreview(data.user.profilePhoto);
           }
-          if (data.user.coverPhoto) { // Changed to match database schema
+          if (data.user.coverPhoto) {
             setCoverPicturePreview(data.user.coverPhoto);
           }
         } else {
@@ -91,23 +80,6 @@ const EditProfile = () => {
     };
 
     fetchProfile();
-    
-    // Log AWS config info for debugging
-    const awsHasAccessKey = !!process.env.REACT_APP_AWS_ACCESS_KEY_ID;
-    const awsHasSecretKey = !!process.env.REACT_APP_AWS_SECRET_ACCESS_KEY;
-    
-    // Update AWS config status
-    setAwsConfigStatus({
-      hasAccessKey: awsHasAccessKey,
-      hasSecretKey: awsHasSecretKey
-    });
-    
-    console.log('AWS S3 Config:', {
-      bucket: S3_BUCKET,
-      region: REGION,
-      hasAccessKey: awsHasAccessKey,
-      hasSecretKey: awsHasSecretKey
-    });
   }, [currentUser.id]);
 
   const handleChange = (e) => {
@@ -159,128 +131,70 @@ const EditProfile = () => {
     console.log('Cover picture selected:', file.name, 'Size:', Math.round(file.size / 1024), 'KB');
   };
 
-  // Function to upload a file to AWS S3
-  const uploadToS3 = (file, type) => {
-    return new Promise((resolve, reject) => {
-      // Map frontend types to database field names
-      const typeMap = {
-        'profilePicture': 'profilePhoto',
-        'coverPicture': 'coverPhoto'
-      };
+  // Function to upload a file using the new API endpoint
+  const uploadFile = async (file, type) => {
+    if (!file) {
+      console.log(`No ${type} file selected, keeping existing URL:`, profileData[type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto'] || 'none');
+      // If no file is selected, resolve with existing URL
+      return profileData[type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto'] || '';
+    }
+    
+    try {
+      console.log(`Starting upload for ${type}:`, file.name);
       
-      // Get the database field name
-      const dbField = typeMap[type] || type;
+      // Create a mock XMLHttpRequest to track upload progress
+      const xhr = new XMLHttpRequest();
       
-      if (!file) {
-        console.log(`No ${type} file selected, keeping existing URL:`, profileData[dbField] || 'none');
-        // If no file is selected, resolve with existing URL
-        resolve(profileData[dbField] || '');
-        return;
-      }
-  
-      console.log(`Starting S3 upload for ${type}:`, file.name);
-      console.log('File size:', Math.round(file.size / 1024), 'KB');
-      console.log('File type:', file.type);
-      
-      // Configure AWS
-      try {
-        // Check if AWS credentials are available
-        if (!process.env.REACT_APP_AWS_ACCESS_KEY_ID || !process.env.REACT_APP_AWS_SECRET_ACCESS_KEY) {
-          console.error('AWS credentials not found in environment variables');
-          setError('AWS configuration error. Please check your environment variables.');
-          reject(new Error('AWS credentials not configured'));
-          return;
-        }
-        
-        // Configure AWS
-        AWS.config.update({
-          accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-          region: REGION
-        });
-      } catch (configError) {
-        console.error('Error configuring AWS:', configError);
-        setError('AWS configuration error: ' + configError.message);
-        reject(configError);
-        return;
-      }
-  
-      // Create a unique file name to prevent overwrites
-      const timestamp = new Date().getTime();
-      const fileName = `${currentUser.id}/${type}_${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-      console.log('Generated filename:', fileName);
-      
-      // Set up S3 upload parameters - WITHOUT ACL to fix the bucket error
-      const params = {
-        // ACL property removed since bucket doesn't allow ACLs
-        Body: file,
-        Bucket: S3_BUCKET,
-        Key: fileName,
-        ContentType: file.type
-      };
-  
-      console.log('S3 params:', {
-        Bucket: params.Bucket,
-        Key: params.Key,
-        ContentType: params.ContentType
-      });
-      
-      try {
-        // Create S3 instance
-        const s3 = new AWS.S3({
-          params: { Bucket: S3_BUCKET },
-          region: REGION,
-        });
-        
-        // Upload the file to S3
-        s3.upload(params)
-          .on('httpUploadProgress', (evt) => {
-            // Update progress
-            const progress = Math.round((evt.loaded / evt.total) * 100);
+      // Use the xhr.upload.onprogress event to track upload progress
+      const uploadPromise = new Promise((resolve, reject) => {
+        // Set up progress tracking
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 100);
             console.log(`${type} upload progress: ${progress}%`);
             setUploadProgress(prev => ({
               ...prev,
-              [dbField]: progress  // Use database field name for state update
+              [type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto']: progress
             }));
-          })
-          .send((err, data) => {
-            if (err) {
-              console.error(`Error uploading ${type}:`, err);
-              console.error('S3 error details:', JSON.stringify(err, null, 2));
-              console.error('Error code:', err.code);
-              console.error('Error message:', err.message);
-              
-              // Handle specific error types
-              if (err.code === 'NetworkingError') {
-                setError('Network connectivity issue detected. Please check your connection.');
-              } else if (err.code === 'AccessDenied') {
-                setError('Access denied - check S3 bucket permissions and credentials.');
-              } else if (err.code === 'NoSuchBucket') {
-                setError(`Bucket "${S3_BUCKET}" does not exist or is not accessible.`);
-              } else {
-                setError(`Error uploading ${type}: ${err.message}`);
-              }
-              
-              reject(err);
+          }
+        };
+        
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const response = JSON.parse(xhr.responseText);
+            if (response.success) {
+              resolve(response.url);
             } else {
-              console.log(`Successfully uploaded ${type}:`, data.Location);
-              
-              // If the S3 URL doesn't have the right format, construct one
-              let finalUrl = data.Location;
-              if (!finalUrl || !finalUrl.startsWith('http')) {
-                finalUrl = `https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/${params.Key}`;
-                console.log(`Constructed public URL: ${finalUrl}`);
-              }
-              
-              resolve(finalUrl);
+              reject(new Error(response.message || 'Upload failed'));
             }
-          });
-      } catch (uploadError) {
-        console.error('Error initiating upload:', uploadError);
-        setError('Error initiating upload: ' + uploadError.message);
-        reject(uploadError);
-      }
-    });
+          } else {
+            reject(new Error(`HTTP error ${xhr.status}: ${xhr.statusText}`));
+          }
+        };
+        
+        xhr.onerror = () => {
+          reject(new Error('Network error during upload'));
+        };
+      });
+      
+      // Create FormData manually instead of using ApiService to track progress
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      // Open and send the request
+      xhr.open('POST', `/api/upload/${type}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
+      xhr.send(formData);
+      
+      // Wait for the upload to complete
+      const url = await uploadPromise;
+      console.log(`${type} uploaded successfully:`, url);
+      return url;
+    } catch (err) {
+      console.error(`${type} upload failed:`, err);
+      setError(`${type} upload failed: ${err.message || 'Unknown error'}`);
+      throw err;
+    }
   };
 
   // Handlers for array inputs
@@ -352,20 +266,28 @@ const EditProfile = () => {
       // Only attempt upload if files are selected
       if (profilePictureFile) {
         try {
-          profilePhotoUrl = await uploadToS3(profilePictureFile, 'profilePicture');
-          console.log('Profile picture uploaded successfully:', profilePhotoUrl);
+          const result = await ApiService.uploadFile(profilePictureFile, 'profilePicture');
+          if (result.success) {
+            profilePhotoUrl = result.url;
+            // Set progress to 100% when complete
+            setUploadProgress(prev => ({
+              ...prev,
+              profilePhoto: 100
+            }));
+          } else {
+            throw new Error(result.message || 'Upload failed');
+          }
         } catch (uploadErr) {
           console.error('Profile picture upload failed:', uploadErr);
           setError(`Profile picture upload failed: ${uploadErr.message || 'Unknown error'}`);
           setSubmitting(false);
-          return; // Stop form submission if upload fails
+          return;
         }
       }
       
       if (coverPictureFile) {
         try {
-          coverPhotoUrl = await uploadToS3(coverPictureFile, 'coverPicture');
-          console.log('Cover picture uploaded successfully:', coverPhotoUrl);
+          coverPhotoUrl = await uploadFile(coverPictureFile, 'coverPicture');
         } catch (uploadErr) {
           console.error('Cover picture upload failed:', uploadErr);
           setError(`Cover picture upload failed: ${uploadErr.message || 'Unknown error'}`);
@@ -374,11 +296,11 @@ const EditProfile = () => {
         }
       }
       
-      // Prepare updated profile data with S3 URLs
+      // Prepare updated profile data with image URLs
       const updatedProfileData = {
         ...profileData,
-        profilePhoto: profilePhotoUrl, // Changed to match database schema
-        coverPhoto: coverPhotoUrl     // Changed to match database schema
+        profilePhoto: profilePhotoUrl,
+        coverPhoto: coverPhotoUrl
       };
       
       console.log('Sending updated profile data to API:', updatedProfileData);
@@ -407,7 +329,6 @@ const EditProfile = () => {
     } catch (err) {
       setError('Error updating profile. Please try again later.');
       console.error('Profile update error:', err);
-      console.error('Error details:', JSON.stringify(err, null, 2));
     } finally {
       setSubmitting(false);
     }
@@ -421,13 +342,6 @@ const EditProfile = () => {
       
       {error && <div className="edit-profile-error">{error}</div>}
       {success && <div className="edit-profile-success">{success}</div>}
-      
-      {/* Display AWS configuration status */}
-      {!awsConfigStatus.hasAccessKey || !awsConfigStatus.hasSecretKey ? (
-        <div className="edit-profile-warning">
-          <strong>Warning:</strong> AWS credentials not properly configured. Image uploads may not work.
-        </div>
-      ) : null}
       
       <form onSubmit={handleSubmit} className="edit-profile-form">
         {/* Profile Picture Section */}
@@ -458,15 +372,15 @@ const EditProfile = () => {
               style={{ display: 'none' }}
             />
           </div>
-          {uploadProgress.profilePicture > 0 && uploadProgress.profilePicture < 100 && (
+          {uploadProgress.profilePhoto > 0 && uploadProgress.profilePhoto < 100 && (
             <div className="upload-progress">
               <div className="progress-bar">
                 <div 
                   className="progress-bar-fill" 
-                  style={{ width: `${uploadProgress.profilePicture}%` }}
+                  style={{ width: `${uploadProgress.profilePhoto}%` }}
                 ></div>
               </div>
-              <div className="progress-text">{uploadProgress.profilePicture}%</div>
+              <div className="progress-text">{uploadProgress.profilePhoto}%</div>
             </div>
           )}
           {profilePictureFile && (
@@ -504,15 +418,15 @@ const EditProfile = () => {
               style={{ display: 'none' }}
             />
           </div>
-          {uploadProgress.coverPicture > 0 && uploadProgress.coverPicture < 100 && (
+          {uploadProgress.coverPhoto > 0 && uploadProgress.coverPhoto < 100 && (
             <div className="upload-progress">
               <div className="progress-bar">
                 <div 
                   className="progress-bar-fill" 
-                  style={{ width: `${uploadProgress.coverPicture}%` }}
+                  style={{ width: `${uploadProgress.coverPhoto}%` }}
                 ></div>
               </div>
-              <div className="progress-text">{uploadProgress.coverPicture}%</div>
+              <div className="progress-text">{uploadProgress.coverPhoto}%</div>
             </div>
           )}
           {coverPictureFile && (
@@ -522,6 +436,7 @@ const EditProfile = () => {
           )}
         </div>
         
+        {/* Rest of the form remains the same... */}
         <div className="form-group">
           <label htmlFor="bio">Bio</label>
           <textarea
