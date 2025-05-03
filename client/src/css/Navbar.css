@@ -18,7 +18,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 5%;
+    padding: 0 2%;
     height: 68px;
     /* max-width: 1800px; */
     width: 100%;
@@ -263,6 +263,35 @@
   align-items: center;
 }
 
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #121212; /* Green background */
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.add-btn svg {
+  font-size: 24px; /* Control the size of the FontAwesome icon */
+}
+
+.add-btn:hover {
+  background-color: #121212; /* Darker green on hover */
+  transform: scale(1.05);
+}
+
+/* Adjust the auth-buttons container for better alignment */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Responsive adjustments for profile photo */
 @media (max-width: 768px) {
   .profile-photo-btn {
@@ -278,6 +307,14 @@
     align-items: center;
     width: 100%;
     gap: 12px;
+  }
+  .add-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .add-icon {
+    font-size: 20px;
   }
   
   /* Fix for logout and create post buttons on mobile */

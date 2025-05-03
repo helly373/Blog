@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../css/Navbar.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const location = useLocation();
@@ -97,34 +99,13 @@ export default function Navbar() {
           <div className="auth-buttons">
             {isLoggedIn ? (
               <>
-                {/* Profile photo button */}
-                  {/* {user && (
-                    <Link 
-                      to={`/profile/${user.id}`} 
-                      className="profile-photo-btn"
-                      title="View Profile"
-                      onClick={() => {
-                        console.log('Profile photo URL:', user.profilePhoto);
-                        closeMobileMenu();
-                      }}
-                    >
-                      <img 
-                        src={user.profilePhoto || "/default-avatar.jpg"} 
-                        alt="Profile" 
-                        className="profile-photo"
-                        onError={(e) => {
-                          console.log('Image loading error, falling back to default');
-                          e.target.src = "/default-avatar.jpg";
-                        }}
-                      />
-                    </Link>
-                  )} */}
-                <Link 
+              <Link 
                   to="/create-post" 
-                  className="create-post-btn"
+                  className="create-post-btn add-btn"
                   onClick={closeMobileMenu}
+                  title="Create Post"
                 >
-                  Create Post
+                  <FontAwesomeIcon icon={faPlus} />
                 </Link>
                 <button 
                   onClick={handleLogout} 
@@ -132,13 +113,13 @@ export default function Navbar() {
                 >
                   Logout
                 </button>
-                <Link to={`/profile/${user.id}`} className="profile-photo-btn" title="View Profile">
-          <img 
-            src={user.profilePhoto || "/default-avatar.jpg"} 
-            alt="Profile" 
-            className="profile-photo"
-          />
-        </Link>
+                <Link to={`/profile/${user?.id}`} className="profile-photo-btn" title="View Profile">
+                  <img 
+                    src={user?.profilePhoto || "/default-avatar.jpg"} 
+                    alt="Profile" 
+                    className="profile-photo"
+                  />
+                </Link>
               </>
             ) : (
               <>
