@@ -5,7 +5,7 @@ import "../css/Home.css";
 export default function IndexPage() {
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchFeaturedPosts = async () => {
