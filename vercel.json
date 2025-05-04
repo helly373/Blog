@@ -9,7 +9,7 @@
   
 
       {
-        "src": "api/vercel.js",
+        "src": "api/package.json",
         "use": "@vercel/node"
       }
     ],
