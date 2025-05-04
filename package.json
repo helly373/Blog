@@ -6,7 +6,6 @@
       "client",
       "api"
     ],
-    "engines": {"node": "20.x"},
    "scripts": {
     "build": "cd client && yarn install && yarn build",
     "start": "yarn workspace api start"
