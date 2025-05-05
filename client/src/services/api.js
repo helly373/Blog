@@ -7,7 +7,7 @@ const logApiCall = (endpoint, params) => {
 // Get the base URL with proper production configuration
 const BASE_URL = process.env.NODE_ENV === 'production' 
   ? window.location.origin // Use the current origin in production
-  : 'http://localhost:4000/api';
+  : 'http://localhost:4000';
 
 
 // Create a class for handling API requests
@@ -15,7 +15,7 @@ class ApiService {
   // Auth endpoints
   static async register(userData) {
     try {
-      const response = await fetch(`${BASE_URL}/users/register`, {
+      const response = await fetch(`${BASE_URL}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ class ApiService {
 
   static async login(credentials) {
     try {
-      const response = await fetch(`${BASE_URL}/users/login`, {
+      const response = await fetch(`${BASE_URL}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ class ApiService {
     try {
       console.log("Fetching profile for user ID:", userId);
       
-      const response = await fetch(`${BASE_URL}/users/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -87,7 +87,7 @@ class ApiService {
 
   static async updateProfile(profileData) {
     try {
-      const response = await fetch(`${BASE_URL}/users/profile`, {
+      const response = await fetch(`${BASE_URL}/api/users/profile`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(profileData),
@@ -102,7 +102,7 @@ class ApiService {
   // Follow/unfollow endpoints
   static async followUser(userId) {
     try {
-      const response = await fetch(`${BASE_URL}/users/follow/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/users/follow/${userId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
       });
@@ -115,7 +115,7 @@ class ApiService {
 
   static async unfollowUser(userId) {
     try {
-      const response = await fetch(`${BASE_URL}/users/unfollow/${userId}`, {
+      const response = await fetch(`${BASE_URL}/api/users/unfollow/${userId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
       });
@@ -161,7 +161,7 @@ class ApiService {
       };
       
       console.log('Sending request with Authorization header:', headers.Authorization);
-      const url = `${BASE_URL}/post/create-posts`;
+      const url = `${BASE_URL}/api/post/create-posts`;
       // Use the endpoint that worked in the original code
       const response = await fetch(url, {
         method: 'POST',
@@ -191,7 +191,7 @@ class ApiService {
       if (filters.category) queryParams.append('category', filters.category);
       
       const queryString = queryParams.toString();
-      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
+      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/api/post/posts`;
       console.log('Attempting to fetch from URL:', url);
       
       // Log the URL we're calling in production
@@ -223,7 +223,7 @@ class ApiService {
   
   static async getPostsByRegion(region) {
     try {
-      const response = await fetch(`${BASE_URL}/post/region/${region}`, {
+      const response = await fetch(`${BASE_URL}/api/post/region/${region}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ class ApiService {
   
   static async getPostsByCountry(country) {
     try {
-      const response = await fetch(`${BASE_URL}/post/country/${country}`, {
+      const response = await fetch(`${BASE_URL}/api/post/country/${country}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +255,7 @@ class ApiService {
   
   static async getMapData() {
     try {
-      const response = await fetch(`${BASE_URL}/post/map-data`, {
+      const response = await fetch(`${BASE_URL}/api/post/map-data`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -283,7 +283,7 @@ class ApiService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${BASE_URL}/upload/${type}`, {
+      const response = await fetch(`${BASE_URL}/api/upload/${type}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -305,7 +305,7 @@ class ApiService {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`${BASE_URL}/post/postbyId/${postId}`, {
+      const response = await fetch(`${BASE_URL}/api/post/postbyId/${postId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -360,7 +360,7 @@ class ApiService {
         formData.append('image', postData.image);
       }
   
-      const response = await fetch(`${BASE_URL}/post/update-posts/${postId}`, {
+      const response = await fetch(`${BASE_URL}/api/post/update-posts/${postId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -388,7 +388,7 @@ class ApiService {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`${BASE_URL}/post/delete-posts/${postId}`, {
+      const response = await fetch(`${BASE_URL}/api/post/delete-posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
