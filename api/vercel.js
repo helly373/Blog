@@ -1,7 +1,7 @@
 // api/vercel.js
 require('dotenv').config();
 const express = require('express');
-const cors = require("cors");
+// const cors = require("cors");
 
 // Try to load mongoose and handle the error if it fails
 let mongoose;
@@ -25,10 +25,10 @@ try {
 const app = express();
 
 // Apply middleware
-app.use(cors({
-  origin: ['https://blog-rust-nu-90.vercel.app', 'http://localhost:3000'],
-  credentials: true
-}));
+// app.use(cors({
+//   origin: ['https://blog-rust-nu-90.vercel.app', 'http://localhost:3000'],
+//   credentials: true
+// }));
 app.use(express.json());
 
 // Import routes - wrap in try/catch to handle any import errors
