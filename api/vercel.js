@@ -1,7 +1,7 @@
 // api/vercel.js
 require('dotenv').config();
 const express = require('express');
-// const cors = require("cors");
+// No cors package required
 
 // Try to load mongoose and handle the error if it fails
 let mongoose;
@@ -24,11 +24,21 @@ try {
 // Create express app
 const app = express();
 
-// Apply middleware
-// app.use(cors({
-//   origin: ['https://blog-rust-nu-90.vercel.app', 'http://localhost:3000'],
-//   credentials: true
-// }));
+// Simple CORS middleware without the package
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://blog-rust-nu-90.vercel.app, http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 app.use(express.json());
 
 // Import routes - wrap in try/catch to handle any import errors
