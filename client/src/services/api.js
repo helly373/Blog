@@ -1,9 +1,14 @@
-// src/services/api.js
+const logApiCall = (endpoint, params) => {
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`API Call: ${endpoint}`, params);
+  }
+};
 
-// Get the base URL from environment variables
+// Get the base URL with proper production configuration
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '' // Empty string for production (uses relative URLs)
-  : 'http://localhost:4000/api'; // Use your actual API development port
+  ? '/api' // Use relative URL for production with /api prefix
+  : 'http://localhost:4000/api';
+
 
 // Create a class for handling API requests
 class ApiService {
@@ -186,7 +191,10 @@ class ApiService {
       if (filters.category) queryParams.append('category', filters.category);
       
       const queryString = queryParams.toString();
-      const url = queryString ? `${BASE_URL}/api/post/posts?${queryString}` : `${BASE_URL}/api/post/posts`;
+      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
+      
+      // Log the URL we're calling in production
+      logApiCall(url, filters);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -195,7 +203,17 @@ class ApiService {
         },
       });
       
-      return await response.json();
+      // Log response status for debugging
+      console.log(`Response status for GET posts: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error response text: ${errorText}`);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Get all posts error:', error);
       throw error;
