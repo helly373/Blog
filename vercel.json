@@ -7,7 +7,7 @@
       "config": { "distDir": "build" }
     },
     {
-      "src": "api/index.js",
+      "src": "api/vercel.js",
       "use": "@vercel/node"
     }
   ],
@@ -21,9 +21,9 @@
         "Access-Control-Allow-Headers": "Content-Type, Authorization"
       }
     },
-    { 
-      "src": "/(.*)", 
-      "dest": "client/$1" 
-    }
-  ]
+    { "src": "/(.*)", "dest": "client/$1" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
