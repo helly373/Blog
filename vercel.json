@@ -14,7 +14,7 @@
   "routes": [
     { 
       "src": "/api/(.*)", 
-      "dest": "api/index.js",
+      "dest": "api/vercel.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
