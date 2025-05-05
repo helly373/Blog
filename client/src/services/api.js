@@ -1,21 +1,13 @@
-const logApiCall = (endpoint, params) => {
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`API Call: ${endpoint}`, params);
-  }
-};
+// src/services/api.js
 
-// Get the base URL with proper production configuration
-const BASE_URL = typeof window !== 'undefined' && window.location.origin
-  ? window.location.origin
-  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
+const BASE_URL = 'http://localhost:4000/api'
 
 // Create a class for handling API requests
 class ApiService {
   // Auth endpoints
   static async register(userData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/register`, {
+      const response = await fetch(`${BASE_URL}/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -31,7 +23,7 @@ class ApiService {
 
   static async login(credentials) {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/login`, {
+      const response = await fetch(`${BASE_URL}/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +42,7 @@ class ApiService {
     try {
       console.log("Fetching profile for user ID:", userId);
       
-      const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
+      const response = await fetch(`${BASE_URL}/users/${userId}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -87,7 +79,7 @@ class ApiService {
 
   static async updateProfile(profileData) {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/profile`, {
+      const response = await fetch(`${BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(profileData),
@@ -102,7 +94,7 @@ class ApiService {
   // Follow/unfollow endpoints
   static async followUser(userId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/follow/${userId}`, {
+      const response = await fetch(`${BASE_URL}/users/follow/${userId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
       });
@@ -115,7 +107,7 @@ class ApiService {
 
   static async unfollowUser(userId) {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/unfollow/${userId}`, {
+      const response = await fetch(`${BASE_URL}/users/unfollow/${userId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
       });
@@ -161,9 +153,9 @@ class ApiService {
       };
       
       console.log('Sending request with Authorization header:', headers.Authorization);
-      const url = `${BASE_URL}/api/post/create-posts`;
+      
       // Use the endpoint that worked in the original code
-      const response = await fetch(url, {
+      const response = await fetch('http://localhost:4000/api/post/create-posts', {
         method: 'POST',
         headers: headers,
         body: formData,
@@ -191,13 +183,7 @@ class ApiService {
       if (filters.category) queryParams.append('category', filters.category);
       
       const queryString = queryParams.toString();
-      const url = queryString ? `${BASE_URL}/api/post/posts?${queryString}` : `${BASE_URL}/api/post/posts`;
-      console.log('Production environment:', process.env.NODE_ENV === 'production');
-      console.log('BASE_URL being used:', BASE_URL);
-      console.log('Full URL being called:', url);
-      
-      // Log the URL we're calling in production
-      logApiCall(url, filters);
+      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -206,17 +192,7 @@ class ApiService {
         },
       });
       
-      // Log response status for debugging
-      console.log(`Response status for GET posts: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error response text: ${errorText}`);
-        throw new Error(`API error: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
       console.error('Get all posts error:', error);
       throw error;
@@ -225,7 +201,7 @@ class ApiService {
   
   static async getPostsByRegion(region) {
     try {
-      const response = await fetch(`${BASE_URL}/api/post/region/${region}`, {
+      const response = await fetch(`${BASE_URL}/post/region/${region}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +217,7 @@ class ApiService {
   
   static async getPostsByCountry(country) {
     try {
-      const response = await fetch(`${BASE_URL}/api/post/country/${country}`, {
+      const response = await fetch(`${BASE_URL}/post/country/${country}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +233,7 @@ class ApiService {
   
   static async getMapData() {
     try {
-      const response = await fetch(`${BASE_URL}/api/post/map-data`, {
+      const response = await fetch(`${BASE_URL}/post/map-data`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -285,7 +261,7 @@ class ApiService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${BASE_URL}/api/upload/${type}`, {
+      const response = await fetch(`${BASE_URL}/upload/${type}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -307,7 +283,7 @@ class ApiService {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`${BASE_URL}/api/post/postbyId/${postId}`, {
+      const response = await fetch(`${BASE_URL}/post/postbyId/${postId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -327,7 +303,7 @@ class ApiService {
   }
   
   // Update an existing post
-  static async updatePost(postId, postData) {
+  async updatePost(postId, postData) {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -362,7 +338,7 @@ class ApiService {
         formData.append('image', postData.image);
       }
   
-      const response = await fetch(`${BASE_URL}/api/post/update-posts/${postId}`, {
+      const response = await fetch(`${BASE_URL}/post/update-posts/${postId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -383,14 +359,14 @@ class ApiService {
   }
   
   // Delete a post
-  static async deletePost(postId) {
+  async deletePost(postId) {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`${BASE_URL}/api/post/delete-posts/${postId}`, {
+      const response = await fetch(`${BASE_URL}/post/delete-posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
