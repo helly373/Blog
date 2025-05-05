@@ -279,7 +279,116 @@ class ApiService {
     }
   }
 
+  static async getPostById(postId) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
   
+      const response = await fetch(`${BASE_URL}/post/postbyId/${postId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch post');
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error('API Service - getPostById error:', error);
+      throw error;
+    }
+  }
+  
+  // Update an existing post
+  static async updatePost(postId, postData) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
+      // Create FormData for file upload if needed
+      const formData = new FormData();
+      
+      // Add text fields to FormData
+      if (postData.title) formData.append('title', postData.title);
+      if (postData.summary) formData.append('summary', postData.summary);
+      
+      // Add categories if they exist
+      if (postData.categories) {
+        if (Array.isArray(postData.categories)) {
+          // If categories is already an array, convert to comma-separated string
+          formData.append('categories', postData.categories.join(','));
+        } else {
+          // Otherwise, just append as is
+          formData.append('categories', postData.categories);
+        }
+      }
+      
+      // Add location information
+      if (postData.country) formData.append('country', postData.country);
+      if (postData.city) formData.append('city', postData.city);
+      if (postData.region) formData.append('region', postData.region);
+      
+      // Add image file if included in update
+      if (postData.image) {
+        formData.append('image', postData.image);
+      }
+  
+      const response = await fetch(`${BASE_URL}/post/update-posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update post');
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error('API Service - updatePost error:', error);
+      throw error;
+    }
+  }
+  
+  // Delete a post
+  static async deletePost(postId) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
+      const response = await fetch(`${BASE_URL}/post/delete-posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete post');
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error('API Service - deletePost error:', error);
+      throw error;
+    }
+  }
+
 }
 
 export default ApiService;

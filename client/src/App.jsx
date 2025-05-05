@@ -9,6 +9,7 @@ import CreatePost from './pages/CreatePost';
 import WorldMap from './pages/WorldMap';
 import Profile from './pages/ProfilePage'; // Import Profile component
 import EditProfile from './pages/EditProfilePage'; // Import EditProfile component
+import EditPost from './pages/EditPost';
 
 // Protected route component
 const ProtectedRoute = ({ element }) => {
@@ -31,7 +32,8 @@ function App() {
         <Route path="/create-post" element={<CreatePost/>}/>
         <Route path="/explore" element={<WorldMap/>}/>
         <Route path="/profile/:userId" element={<Profile/>}/> {/* Add Profile route */}
-        <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfile/>}/>}/> {/* Add protected EditProfile route */}
+        <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfile />} />} /> {/* Add protected EditProfile route */}
+        <Route path="/edit-post/:postId" element={<EditPost />} />
         {/* Other routes that need the header... */}
       </Route>
       

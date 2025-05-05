@@ -95,6 +95,178 @@ const getPostsByCountry = async (req, res) => {
   }
 };
 
+// Get a single post by ID
+const getPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await Post.findById(id);
+    
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    
+    res.json(post);
+  } catch (error) {
+    console.error(`Error fetching post with ID ${req.params.id}:`, error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Update a post
+const updatePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if post exists and user is the author
+    const existingPost = await Post.findById(id);
+    if (!existingPost) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    
+    // Verify ownership (only author can update)
+    if (existingPost.author.toString() !== req.user.id) {
+      return res.status(403).json({ error: "You are not authorized to update this post" });
+    }
+    
+    // Prepare update data
+    const { title, summary, categories, country, city, region } = req.body;
+    const updateData = {
+      title,
+      summary
+    };
+    
+    // Handle categories
+    if (categories) {
+      updateData.categories = typeof categories === 'string' 
+        ? categories.split(',').map(cat => cat.trim()) 
+        : categories;
+    }
+    
+    // Prepare location data if provided
+    const location = {};
+    if (country) location.country = country;
+    if (city) location.city = city;
+    if (region) location.region = region;
+    
+    if (Object.keys(location).length > 0) {
+      updateData.location = location;
+    }
+    
+    // Handle file update if new image is uploaded
+    if (req.file) {
+      const file = req.file;
+      const bucketName = process.env.AWS_BUCKET_NAME;
+      
+      // Extract the key from the existing imageUrl
+      let oldImageKey = null;
+      if (existingPost.imageUrl) {
+        // Parse the URL to get the key (path after bucket name)
+        const urlParts = existingPost.imageUrl.split('/');
+        // Find the index of the bucket name in the URL
+        const bucketIndex = urlParts.findIndex(part => part.includes(bucketName));
+        if (bucketIndex !== -1) {
+          // Key is everything after the bucket name in the path
+          oldImageKey = urlParts.slice(bucketIndex + 1).join('/');
+        }
+      }
+      
+      // Delete old image if it exists
+      if (oldImageKey) {
+        const deleteParams = {
+          Bucket: bucketName,
+          Key: oldImageKey
+        };
+        
+        try {
+          await s3.deleteObject(deleteParams).promise();
+          console.log(`Deleted old image: ${oldImageKey}`);
+        } catch (deleteError) {
+          console.error("Error deleting old image:", deleteError);
+          // Continue with update even if delete fails
+        }
+      }
+      
+      // Upload new image
+      const uploadParams = {
+        Bucket: bucketName,
+        Key: `images/${Date.now()}_${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: "public-read"
+      };
+      
+      const uploadResult = await s3.upload(uploadParams).promise();
+      updateData.imageUrl = uploadResult.Location;
+    }
+    
+    // Update the post
+    const updatedPost = await Post.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    res.json(updatedPost);
+  } catch (error) {
+    console.error(`Error updating post with ID ${req.params.id}:`, error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Delete a post
+const deletePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if post exists and user is the author
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    
+    // Verify ownership (only author can delete)
+    if (post.author.toString() !== req.user.id) {
+      return res.status(403).json({ error: "You are not authorized to delete this post" });
+    }
+    
+    // Delete image from S3 if it exists
+    if (post.imageUrl) {
+      const bucketName = process.env.AWS_BUCKET_NAME;
+      
+      // Extract the key from the imageUrl
+      const urlParts = post.imageUrl.split('/');
+      // Find the index of the bucket name in the URL
+      const bucketIndex = urlParts.findIndex(part => part.includes(bucketName));
+      
+      if (bucketIndex !== -1) {
+        // Key is everything after the bucket name in the path
+        const imageKey = urlParts.slice(bucketIndex + 1).join('/');
+        
+        const deleteParams = {
+          Bucket: bucketName,
+          Key: imageKey
+        };
+        
+        try {
+          await s3.deleteObject(deleteParams).promise();
+          console.log(`Deleted image: ${imageKey}`);
+        } catch (deleteError) {
+          console.error("Error deleting image from S3:", deleteError);
+          // Continue with post deletion even if image delete fails
+        }
+      }
+    }
+    
+    // Delete the post from database
+    await Post.findByIdAndDelete(id);
+    
+    res.json({ message: "Post deleted successfully" });
+  } catch (error) {
+    console.error(`Error deleting post with ID ${req.params.id}:`, error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // Get map data (aggregated by country)
 const getMapData = async (req, res) => {
   try {
@@ -130,5 +302,8 @@ module.exports = {
   getAllPosts,
   getPostsByRegion,
   getPostsByCountry,
+  getPostById,
+  updatePost,
+  deletePost,
   getMapData
 };

@@ -14,6 +14,10 @@ router.post("/create-posts", verifyToken, upload.single("image"), postController
 // GET /api/posts - Fetch all posts (optionally filter by query params)
 router.get("/posts", postController.getAllPosts);
 
+router.get('/postbyId/:id', verifyToken, postController.getPostById);
+router.put('/update-posts/:id', verifyToken, upload.single('image'), postController.updatePost);
+router.delete('/delete-posts/:id', verifyToken, postController.deletePost);
+
 // Map-related routes
 router.get("/map-data", postController.getMapData);
 router.get("/region/:region", postController.getPostsByRegion);
