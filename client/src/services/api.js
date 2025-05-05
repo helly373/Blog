@@ -5,9 +5,9 @@ const logApiCall = (endpoint, params) => {
 };
 
 // Get the base URL with proper production configuration
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? window.location.origin // Use the current origin in production
-  : 'http://localhost:4000';
+const BASE_URL = typeof window !== 'undefined' && window.location.origin
+  ? window.location.origin
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 
 // Create a class for handling API requests
