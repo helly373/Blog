@@ -14,7 +14,7 @@ export default function BlogPage() {
 
   useEffect(() => {
     // Get the current user's ID from localStorage or session
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
     
      // Get userId from the user object
   const userJSON = localStorage.getItem("user");
