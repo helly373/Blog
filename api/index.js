@@ -14,13 +14,11 @@ app.use('/api/users', registerRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// Only start the server when running directly (not when imported)
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+// Always bind to a port regardless of environment
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 // Export the Express app
 module.exports = app;
