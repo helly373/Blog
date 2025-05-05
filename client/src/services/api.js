@@ -186,7 +186,7 @@ class ApiService {
       if (filters.category) queryParams.append('category', filters.category);
       
       const queryString = queryParams.toString();
-      const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
+      const url = queryString ? `${BASE_URL}/api/post/posts?${queryString}` : `${BASE_URL}/api/post/posts`;
       
       const response = await fetch(url, {
         method: 'GET',
