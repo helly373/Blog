@@ -192,6 +192,7 @@ class ApiService {
       
       const queryString = queryParams.toString();
       const url = queryString ? `${BASE_URL}/post/posts?${queryString}` : `${BASE_URL}/post/posts`;
+      console.log('Attempting to fetch from URL:', url);
       
       // Log the URL we're calling in production
       logApiCall(url, filters);
