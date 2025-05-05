@@ -6,7 +6,7 @@ const logApiCall = (endpoint, params) => {
 
 // Get the base URL with proper production configuration
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' // Use relative URL for production with /api prefix
+  ? window.location.origin // Use the current origin in production
   : 'http://localhost:4000/api';
 
 
@@ -161,9 +161,9 @@ class ApiService {
       };
       
       console.log('Sending request with Authorization header:', headers.Authorization);
-      
+      const url = `${BASE_URL}/post/create-posts`;
       // Use the endpoint that worked in the original code
-      const response = await fetch('http://localhost:4000/api/post/create-posts', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: headers,
         body: formData,
