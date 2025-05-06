@@ -142,61 +142,34 @@ const EditProfile = () => {
     try {
       console.log(`Starting upload for ${type}:`, file.name);
       
-      // Create a mock XMLHttpRequest to track upload progress
-      const xhr = new XMLHttpRequest();
+      // Update progress state
+      setUploadProgress(prev => ({
+        ...prev,
+        [type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto']: 10
+      }));
+  
+      // Use the ApiService to upload the file
+      const result = await ApiService.uploadFile(file, type);
       
-      // Use the xhr.upload.onprogress event to track upload progress
-      const uploadPromise = new Promise((resolve, reject) => {
-        // Set up progress tracking
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            console.log(`${type} upload progress: ${progress}%`);
-            setUploadProgress(prev => ({
-              ...prev,
-              [type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto']: progress
-            }));
-          }
-        };
+      if (result.success) {
+        console.log(`${type} uploaded successfully:`, result.url);
         
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const response = JSON.parse(xhr.responseText);
-            if (response.success) {
-              resolve(response.url);
-            } else {
-              reject(new Error(response.message || 'Upload failed'));
-            }
-          } else {
-            reject(new Error(`HTTP error ${xhr.status}: ${xhr.statusText}`));
-          }
-        };
+        // Set progress to 100% when complete
+        setUploadProgress(prev => ({
+          ...prev,
+          [type === 'profilePicture' ? 'profilePhoto' : 'coverPhoto']: 100
+        }));
         
-        xhr.onerror = () => {
-          reject(new Error('Network error during upload'));
-        };
-      });
-      
-      // Create FormData manually instead of using ApiService to track progress
-      const formData = new FormData();
-      formData.append('image', file);
-      
-      // Open and send the request
-      xhr.open('POST', `/api/upload/${type}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
-      xhr.send(formData);
-      
-      // Wait for the upload to complete
-      const url = await uploadPromise;
-      console.log(`${type} uploaded successfully:`, url);
-      return url;
+        return result.url;
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
     } catch (err) {
       console.error(`${type} upload failed:`, err);
       setError(`${type} upload failed: ${err.message || 'Unknown error'}`);
       throw err;
     }
   };
-
   // Handlers for array inputs
   const addInterest = () => {
     if (interestInput.trim() !== '') {
@@ -266,17 +239,7 @@ const EditProfile = () => {
       // Only attempt upload if files are selected
       if (profilePictureFile) {
         try {
-          const result = await ApiService.uploadFile(profilePictureFile, 'profilePicture');
-          if (result.success) {
-            profilePhotoUrl = result.url;
-            // Set progress to 100% when complete
-            setUploadProgress(prev => ({
-              ...prev,
-              profilePhoto: 100
-            }));
-          } else {
-            throw new Error(result.message || 'Upload failed');
-          }
+          profilePhotoUrl = await uploadFile(profilePictureFile, 'profilePicture');
         } catch (uploadErr) {
           console.error('Profile picture upload failed:', uploadErr);
           setError(`Profile picture upload failed: ${uploadErr.message || 'Unknown error'}`);
@@ -292,7 +255,7 @@ const EditProfile = () => {
           console.error('Cover picture upload failed:', uploadErr);
           setError(`Cover picture upload failed: ${uploadErr.message || 'Unknown error'}`);
           setSubmitting(false);
-          return; // Stop form submission if upload fails
+          return;
         }
       }
       

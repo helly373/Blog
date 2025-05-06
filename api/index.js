@@ -7,9 +7,7 @@ const postRoutes = require('./routes/PostRoutes');
 const uploadRoutes = require('./routes/upload');
 
 const app = express();
-app.use(cors({
-  origin:['https://traveller-xjld.onrender.com', 'http://localhost:3000']
-}));
+app.use(cors());
 app.use(express.json());
 
 app.use('/api/users', registerRoutes);

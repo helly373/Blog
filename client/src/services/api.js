@@ -1,6 +1,6 @@
 // src/services/api.js
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const BASE_URL =  'http://localhost:4000';
 
 // Create a class for handling API requests
 class ApiService {  
@@ -256,23 +256,32 @@ class ApiService {
     };
   }
 
-  static async uploadFile(file, type){
+  static async uploadFile(file, type) {
     try {
       const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch(`${BASE_URL}/api/upload/${type}`, {
+      formData.append('image', file);  // Make sure this key is 'image' to match backend
+  
+      // Convert type to the correct parameter format
+      // Your backend expects 'profilePicture' or 'coverPicture'
+      const uploadType = type === 'profilePicture' ? 'profilePicture' : 'coverPicture';
+  
+      const response = await fetch(`${BASE_URL}/api/upload/${uploadType}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
+          // Don't set Content-Type when using FormData - browser will set it with boundary
         },
         body: formData
       });
-
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+  
       return await response.json();
     } catch (error) {
       console.error('Error uploading file:', error);
-      return { success: false, message: 'Error uploading file' };
+      return { success: false, message: `Error uploading file: ${error.message}` };
     }
   }
 
